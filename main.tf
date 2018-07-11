@@ -52,13 +52,13 @@ resource "aws_autoscaling_group" "example" {
   min_size = 2
   tag {
     key = "Name"
-    value = "terraform-asg-example"
+    value = "terraform-example-asg"
     propagate_at_launch = true
   }
 }
 
 resource "aws_elb" "example" {
-  name = "terraform-elb-example"
+  name = "terraform-example-elb"
   availability_zones = ["${data.aws_availability_zones.available.names}"]
   security_groups = ["${aws_security_group.elb.id}"]
   listener {
@@ -77,7 +77,7 @@ resource "aws_elb" "example" {
 }
 
 resource "aws_security_group" "elb" {
-  name = "terraform-example-sg"
+  name = "terraform-example-sg-elb"
   ingress {
     from_port = 80
     protocol = "tcp"
