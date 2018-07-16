@@ -1,14 +1,27 @@
-provider "aws" {
-  version = "~> 1.23"
-  region = "us-east-1"
+terraform {
+  backend "s3" {
+    bucket = "andreacfm-terraform-state"
+    key = "stage/services/webserver-cluster/terraform.state"
+    region  = "eu-west-1"
+    encrypt = true
+  }
 }
 
-variable "server_port" {
-  description = "Server port"
-  default = 8080
+provider "aws" {
+  version = "~> 1.23"
+  region = "eu-west-1"
 }
 
 data "aws_availability_zones" "available" {}
+
+data "terraform_remote_state" "db" {
+  backend = "s3"
+  config {
+    bucket="andreacfm-terraform-state"
+    key     = "stage/data-stores/mysql/terraform.state"
+    region  = "eu-west-1"
+  }
+}
 
 resource "aws_security_group" "instance" {
   name = "terraform-example-sg-instance"
@@ -33,7 +46,8 @@ resource "aws_launch_configuration" "example" {
 
   user_data = <<-EOF
               #!/bin/bash
-              echo "Hello, World" > index.html
+              echo "Hello, World" >> index.html
+              echo "${data.terraform_remote_state.db.address}" >> index.html
               nohup busybox httpd -f -p "${var.server_port}" &
               EOF
 
@@ -91,9 +105,4 @@ resource "aws_security_group" "elb" {
     to_port = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
-
-
-output "elb_dns_name" {
-  value = "${aws_elb.example.dns_name}"
 }
